@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - orbit controls</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #000;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#000;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+
+			}
+
+			a {
+				color: red;
+			}
+		</style>
+	</head>
+
+	<body>
+		<script src="js/three.min.js"></script>
+		<script src="js/OrbitControls.js"></script>
+
+		<script src="fonts/helvetiker_regular.typeface.js"></script>
+
+
+<script type="application/x-glsl" id="sky-vertex">  
+varying vec2 vUV;
+
+void main() {  
+  vUV = uv;
+  vec4 pos = vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * pos;
+}
+</script>
+
+<script type="application/x-glsl" id="sky-fragment">  
+uniform sampler2D texture;  
+varying vec2 vUV;
+
+void main() {  
+  vec4 sample = texture2D(texture, vUV);
+  gl_FragColor = vec4(sample.xyz, sample.w);
+}
+</script> 
+
+		<script>
+
+
+			var players = [
+							  {
+							    "name": "Valerio Costa",
+							    "ruolo": "Developer",
+							    "numero": 4,
+							    "img": "4 Valerio Costa.png",
+							    "positionX": 25,
+							    "positionZ": 25
+							  },
+							  {
+							    "name": "Luca Severini",
+							    "ruolo": "CTO",
+							    "numero": 6,
+							    "img": "6 Luca Severini.png",
+							    "positionX": 0,
+							    "positionZ": 0
+							  },
+							  {
+							    "name": "Gianluca Della Rosa",
+							    "ruolo": "Developer",
+							    "numero": 5 ,
+							    "img": "5 Gianluca Della Rosa.png",
+							    "positionX": -25,
+							    "positionZ": -25
+							  },
+							  {
+							    "name": "Diego Flaccadori",
+							    "ruolo": "CTO",
+							    "numero": 12,
+							    "img": "12 Diego Flaccadori.png",
+							    "positionX": 50,
+							    "positionZ": -50
+							  },
+							  {
+							    "name": "Eric Ruiu",
+							    "ruolo": "Developer",
+							    "numero": 14,
+							    "img": "14 Eric Ruiu.png",
+							    "positionX": -50,
+							    "positionZ": 50
+							  }
+							];
+			var camera, controls, scene, renderer;
+
+			function setUpSkyDome(){
+			    // prepare ShaderMaterial
+			    var uniforms = {
+			        texture: { type: 't', value: THREE.ImageUtils.loadTexture('textures/dome.jpg') }
+			    };
+			    var skyMaterial = new THREE.ShaderMaterial( {
+			        uniforms: uniforms,
+			        vertexShader: document.getElementById('sky-vertex').textContent, fragmentShader: document.getElementById('sky-fragment').textContent
+			    });
+
+			    // create Mesh with sphere geometry and add to the scene
+			    var skyBox = new THREE.Mesh(new THREE.SphereGeometry(250, 60, 40), skyMaterial);
+			    skyBox.scale.set(-1, 1, 1);
+			    skyBox.eulerOrder = 'XZY';
+			    skyBox.renderDepth = 500.0;
+
+			    this.scene.add(skyBox);
+			}
+
+			function setUpControls(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+
+			function setUpCamera(){
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 150;
+			}
+
+			function setUpCampo(){
+
+				var geometry = new THREE.BoxGeometry( 180, 1, 124.7 );
+
+				var materialCampo = new THREE.MeshPhongMaterial( {
+					map: THREE.ImageUtils.loadTexture('textures/campo.jpg') } );
+				materialCampo.map.minFilter = THREE.LinearFilter;
+
+			    var materialside = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
+				materialside.map.minFilter = THREE.LinearFilter;
+			  
+			    var materials = [
+									materialside,
+									materialside,
+									materialCampo,
+									materialside,
+									materialside,
+									materialside
+								];
+  
+   				var meshFaceMaterial = new THREE.MeshFaceMaterial( materials );
+				
+				var cube = new THREE.Mesh( geometry, meshFaceMaterial );				
+				scene.add( cube );
+			}
+
+			function setUpPlayerImg(entry){
+
+				var geometry = new THREE.PlaneGeometry( 13.3, 20, 32 );
+				var materialPlayer = new THREE.MeshPhongMaterial( {
+					map: THREE.ImageUtils.loadTexture('textures/'+entry.img),
+					transparent: true,
+					side: THREE.DoubleSide
+				} );
+
+				materialPlayer.map.minFilter = THREE.LinearFilter;
+			    var plane = new THREE.Mesh( geometry, materialPlayer );
+
+				plane.position.y = 18;
+				plane.position.x = entry.positionX;
+				plane.position.z = entry.positionZ;
+				scene.add( plane );
+
+			}
+
+			function setUpPlayerBall(entry){
+				var geometry = new THREE.SphereGeometry( 3, 36, 36 );
+				var material = new THREE.MeshPhongMaterial({
+					color: 0xdddddd,
+					emissive: 0x072534,
+					side: THREE.DoubleSide,
+					shading: THREE.FlatShading
+				})
+				var sphere = new THREE.Mesh( geometry, material );
+				sphere.position.y = 4;
+				sphere.position.x = entry.positionX;
+				sphere.position.z = entry.positionZ;
+				scene.add( sphere );
+			}
+
+			function setUpWorld() {
+
+				setUpCampo();
+
+    			var material = new THREE.MeshPhongMaterial({
+					color: 0xdddddd,
+					emissive: 0x072534,
+					side: THREE.DoubleSide,
+					shading: THREE.FlatShading
+				})
+
+				players.forEach(function(entry) {
+				    console.log(entry);
+
+				    setUpPlayerBall(entry);
+
+  					var textGeom = new THREE.TextGeometry( entry.name, {
+				        size: 5, height: 0.5, curveSegments: 4,
+						font: "helvetiker", style: "normal",
+				    });
+				    var textMesh = new THREE.Mesh( textGeom, material );
+					textMesh.position.y = 25;
+					textMesh.position.x = entry.positionX;
+					textMesh.position.z = entry.positionZ;
+				    scene.add( textMesh );
+
+					var textGeom = new THREE.TextGeometry( entry.numero, {
+				        size: 5, height: 0.5, curveSegments: 4,
+						font: "helvetiker", style: "normal",
+				    });
+				    var textMesh = new THREE.Mesh( textGeom, material );
+					textMesh.position.y = 15;
+					textMesh.position.x = entry.positionX;
+					textMesh.position.z = entry.positionZ;
+
+				    scene.add( textMesh );
+
+				    var textGeom = new THREE.TextGeometry( entry.ruolo, {
+				        size: 5, height: 0.5, curveSegments: 4,
+						font: "helvetiker", style: "normal",
+				    });
+				    var textMesh = new THREE.Mesh( textGeom, material );
+					textMesh.position.y = 7;
+					textMesh.position.x = entry.positionX;
+					textMesh.position.z = entry.positionZ;
+
+				    scene.add( textMesh );
+
+					setUpPlayerImg(entry);
+
+
+				});
+
+			}
+
+			function setUpLight(){
+				light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 1, 1, 1 );
+				scene.add( light );
+
+				light = new THREE.DirectionalLight( 0x002288 );
+				light.position.set( -1, -1, -1 );
+				scene.add( light );
+
+				light = new THREE.AmbientLight( 0x222222 );
+				scene.add( light );
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function init() {
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+
+				setUpSkyDome();
+
+				//scene.add( setUpSkyDome() );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( scene.fog.color );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );				
+
+				setUpCamera();
+
+				setUpControls();
+
+				// world
+				setUpWorld();
+
+				// lights
+				setUpLight();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+				render();
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+			init();
+			animate();
+		</script>
+
+	</body>
+</html>

@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - materials - video</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+
+	<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'>
+		<script src='js/three.min.js'></script>
+		<script src='js/threex.webcamtexture.js'></script>
+		<script src='js/threex.videotexture.js'></script>
+		<script src='js/OrbitControls.js'></script>
+		<script src="js/KeyboardState.js"></script>
+
+		<script>
+
+			var camera, controls, renderer;
+			var webcamTexture, videoTexture;
+
+			var lastTimeMsec = null;
+
+			var keyboard = new KeyboardState();
+
+			var autoPilot = true;
+			var cubeTexture = null;
+
+			var skydome = null;
+
+
+			function setUpOrbitController(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.minDistance = 4;
+				controls.maxPolarAngle = Math.PI/2;
+				controls.enableZoom = true;
+			}
+
+			function onWindowResize() {
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function setUpCamera(){
+				camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 10000 );
+				camera.position.z = 3;
+			}
+
+			var Skybox = function (type, ext) {
+				
+				var path = "textures/cube"+type+"/";
+				var format = ext;
+				var urls = [
+					path + 'px' + format, path + 'nx' + format,
+					path + 'py' + format, path + 'ny' + format,
+					path + 'pz' + format, path + 'nz' + format
+				];
+				
+				var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
+
+				// Skybox
+				var shader = THREE.ShaderLib[ "cube" ];
+				shader.uniforms[ "tCube" ].value = textureCube;
+
+				var material = new THREE.ShaderMaterial( {
+					fragmentShader: shader.fragmentShader,
+					vertexShader: shader.vertexShader,
+					uniforms: shader.uniforms,
+					depthWrite: false,
+					side: THREE.BackSide
+				} );
+
+				this.skyDome = new THREE.Mesh( new THREE.BoxGeometry( 1000, 1000, 1000 ), material );
+			}
+			
+			Skybox.prototype.getSky = function() {
+				return this.skyDome;
+			}
+
+
+			function init() {
+
+				scene = new THREE.Scene();	
+
+				var skybox = new Skybox(1, '.jpg');
+				skydomeDay = skybox.getSky();
+
+				//skybox = new Skybox(2, '.bmp');
+				//skydomeNight = skybox.getSky();
+
+				scene.add( skydomeDay );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0xEEEEEE );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );
+				
+				setUpCamera();
+
+				// handle window resize
+				window.addEventListener( 'resize', onWindowResize, false );	
+
+				setUpOrbitController();				
+
+				//////////////////////	WebcamTexture or VideoTexture
+				webcamTexture	= new THREEx.WebcamTexture();
+
+				var url	= 'textures/video/tmb_animation.mp4'
+				videoTexture= new THREEx.VideoTexture(url);
+
+				cubeTexture = videoTexture;
+
+				var geometry	= new THREE.CubeGeometry(1,1,1);
+				var material	= new THREE.MeshBasicMaterial({
+					map	: cubeTexture.texture
+				});
+				material.map.minFilter = THREE.LinearFilter;
+				var mesh	= new THREE.Mesh( geometry, material );
+				mesh.needsUpdate = true;
+				scene.add( mesh );
+
+			}
+
+			function animate(nowMsec) {
+
+				keyboard.update();
+
+				if ( keyboard.down("space") ){
+					autoPilot = !autoPilot;
+				}
+
+				if ( keyboard.down("enter") ){
+					console.log("ENTER down");
+
+					if(cubeTexture == videoTexture){
+						console.log("set cubeTexture = webcamTexture ");
+						cubeTexture = webcamTexture;
+					}else{
+						cubeTexture = videoTexture;
+						console.log("set cubeTexture = videoTexture ");						
+					}
+				}
+
+				if ( keyboard.down("backspace") ){
+					console.log("down backspace");
+
+					scene.remove(skydomeDay);
+					//scene.add(skydome2);
+				}
+
+				if ( keyboard.up("backspace") ){
+					console.log("up backspace");
+					//scene.remove(skydome2);
+					scene.add(skydomeDay);
+					//scene.add(skydome);
+				}
+
+
+				// if ( keyboard.up("space") ){
+				// 	console.log("space up");
+				// }
+
+				// if ( keyboard.pressed("space") ){
+				// 	console.log("space pressed");
+				// } 
+	
+
+				//Update camera texture
+				lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
+				var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+				lastTimeMsec	= nowMsec;
+				//webcamTexture.update(deltaMsec/1000, nowMsec/1000);
+				//videoTexture.update(deltaMsec/1000, nowMsec/1000);
+				cubeTexture.update(deltaMsec/1000, nowMsec/1000);
+
+
+				requestAnimationFrame( animate );
+				controls.update();
+				render();
+			}
+
+			var radius = 6;
+			var theta = 0;
+
+			function render() {
+
+				if(autoPilot){
+					theta += 0.1;
+
+					camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+					camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
+					camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+					camera.lookAt( scene.position );
+				}			
+				
+
+				renderer.render( scene, camera );
+
+			}
+
+			init();
+			animate();
+
+		</script>
+	</body>
+</html>
+
+
+

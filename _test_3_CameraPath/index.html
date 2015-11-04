@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - materials - video</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+
+	<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'>
+		<script src='js/three.min.js'></script>
+		<script src='js/threex.webcamtexture.js'></script>
+		<script src='js/OrbitControls.js'></script>
+		<script>
+
+			var camera, controls, renderer, webcamTexture;
+
+
+
+			var lastTimeMsec= null;
+
+
+
+			function setUpOrbitController(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+
+			function onWindowResize() {
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function setUpCamera(){
+				camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 10000 );
+				camera.position.z = 3;
+			}
+
+			function setUpSkyDome(){
+				
+				var path = "textures/cube/";
+				var format = '.jpg';
+				var urls = [
+					path + 'px' + format, path + 'nx' + format,
+					path + 'py' + format, path + 'ny' + format,
+					path + 'pz' + format, path + 'nz' + format
+				];
+				
+				var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
+				var material = new THREE.MeshBasicMaterial( { color: 0xffffff, envMap: textureCube, refractionRatio: 0.95 } );				
+
+				// Skybox
+				var shader = THREE.ShaderLib[ "cube" ];
+				shader.uniforms[ "tCube" ].value = textureCube;
+				var material = new THREE.ShaderMaterial( {
+					fragmentShader: shader.fragmentShader,
+					vertexShader: shader.vertexShader,
+					uniforms: shader.uniforms,
+					depthWrite: false,
+					side: THREE.BackSide
+				} );
+
+				var skyDome = new THREE.Mesh( new THREE.BoxGeometry( 1000, 1000, 1000 ), material );
+				return skyDome;
+			}
+
+			function init() {
+
+				scene = new THREE.Scene();
+				scene.add( setUpSkyDome() );
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0xEEEEEE );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );
+				
+				setUpCamera();
+
+				// handle window resize
+				window.addEventListener( 'resize', onWindowResize, false );	
+
+				setUpOrbitController();				
+
+				// create the webcamTexture
+				webcamTexture	= new THREEx.WebcamTexture();		
+
+				// use the texture in a THREE.Mesh
+				var geometry	= new THREE.CubeGeometry(1,1,1);
+				var material	= new THREE.MeshBasicMaterial({
+					map	: webcamTexture.texture
+				});
+				material.map.minFilter = THREE.LinearFilter;
+				var mesh	= new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+			
+			}
+
+			function animate(nowMsec) {
+
+				//Update camera texture
+				lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
+				var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+				lastTimeMsec	= nowMsec;
+				webcamTexture.update(deltaMsec/1000, nowMsec/1000);
+
+
+				requestAnimationFrame( animate );
+				controls.update();
+				render();
+			}
+
+			var radius = 6;
+			var theta = 0;
+
+			function render() {				
+				theta += 0.1;
+
+				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+
+			}
+
+			init();
+			animate();
+
+		</script>
+	</body>
+</html>
+
+
+
