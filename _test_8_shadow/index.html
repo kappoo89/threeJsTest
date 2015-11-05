@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>three.js webgl - orbit controls</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                color: #000;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+
+                background-color: #fff;
+                margin: 0px;
+                overflow: hidden;
+            }
+
+            #info {
+                color:#000;
+                position: absolute;
+                top: 0px; width: 100%;
+                padding: 5px;
+
+            }
+
+            a {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+
+        <script src="js/three.min.js"></script>
+        <script src="js/OrbitControls.js"></script>
+
+        <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+        <script>
+            var scene, camera, renderer, cube, cubeM, terrain, spot;
+
+            function setUpCamera() {
+                camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.01, 100 );
+                camera.position.set(0.4, 0, 5);
+                scene.add(camera);                
+            }
+
+            function setUpControls(){
+                controls = new THREE.OrbitControls( camera, renderer.domElement );
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.25;
+                controls.enableZoom = true;
+            }
+
+            function setUpTerrain() {
+                terrain = new THREE.Mesh(
+                new THREE.CubeGeometry(10, 1, 10), new THREE.MeshPhongMaterial({
+                    color: 0x00ff00
+                }));
+                //terrain.castShadow = true;
+                terrain.receiveShadow = true;
+                terrain.position.set(0, -2, 0);
+                terrain.rotation.set(0, 0, 0);
+
+                scene.add(terrain);
+            }
+
+            function setUpCube(){
+                cubeM = new THREE.MeshPhongMaterial({
+                        color: 0xff0000
+                    });
+
+                cube = new THREE.Mesh(
+                new THREE.CubeGeometry(1, 1, 1), cubeM);
+                cube.position.set(0, 0, 0);
+                cube.rotation.set(0, 0, 0);
+                scene.add(cube);
+                //cube.receiveShadow = true;
+                cube.castShadow = true; 
+            }
+
+            function setUpLight(){
+
+                spot = new THREE.SpotLight();
+                spot.shadowCameraNear = 1; // keep near and far planes as tight as possible
+                spot.shadowCameraFar = 10; // shadows not cast past the far plane
+                spot.shadowCameraVisible = true;
+
+                //Un-Comment this
+
+                spot.castShadow = true;
+
+                spot.position.set(-1, 2, 1.5)
+                scene.add(spot);
+            }
+            
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+
+            function init() {
+                scene = new THREE.Scene();
+
+                setUpCamera();
+
+                // renderer = new THREE.WebGLRenderer({
+                //     clearAlpha: 1,
+                //     clearColor: 0xdddddd,
+                //     antialias: true
+                // })
+                // renderer.setPixelRatio( window.devicePixelRatio );
+                // renderer.setSize( window.innerWidth, window.innerHeight );
+                // renderer.shadowMap.enabled = true;
+
+
+                renderer = new THREE.WebGLRenderer( { antialias: true } );
+                //renderer.setClearColor( scene.fog.color );
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.shadowMapEnabled = true;
+                renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+
+                document.body.appendChild( renderer.domElement );               
+                
+                setUpTerrain();
+                setUpCube();
+                setUpLight();
+
+                setUpControls();
+
+                window.addEventListener( 'resize', onWindowResize, false );
+
+            }
+            
+
+            function animate() {
+
+                requestAnimationFrame(animate);
+
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+
+                renderer.render(scene, camera);
+
+            }
+
+            init();
+            animate();
+
+        </script>
+
+    </body>
+</html>
