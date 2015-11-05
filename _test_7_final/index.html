@@ -35,6 +35,8 @@
 	<body>
 		<script src="js/three.min.js"></script>
 		<script src="js/OrbitControls.js"></script>
+		<script src="js/KeyboardState.js"></script>
+
 
 		<script src="fonts/helvetiker_regular.typeface.js"></script>
 
@@ -132,6 +134,13 @@
 							  }
 							];
 			var camera, controls, scene, renderer;
+
+			var radius = 160;
+			var theta = 0;
+
+			var keyboard = new KeyboardState();
+			var autoPilot = true;
+
 
 			function setUpSkyDome(){
 			    
@@ -345,6 +354,13 @@
 			}
 
 			function animate() {
+
+				keyboard.update();
+
+				if ( keyboard.down("space") ){
+					autoPilot = !autoPilot;
+				}
+
 				requestAnimationFrame( animate );
 				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
 				render();
@@ -352,6 +368,14 @@
 
 			function render() {
 
+				if(autoPilot){
+					theta += 0.1;
+
+					camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+					//camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
+					camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+				}
+				
 				scene.children.forEach(function(entry) {
 					if(entry.name == "Campo"){
 						entry.children.forEach(function(entry) {
