@@ -206,7 +206,6 @@
 				cube.name = "Campo";
 				cube.receiveShadow = true;
 
-				//scene.add( cube );
 				return cube;
 			}
 
@@ -230,19 +229,12 @@
 
 			function setUpPlayerBall(){
 				var geometry = new THREE.SphereGeometry( 4, 36, 36 );
-				
-
-
 				var material	= new THREE.MeshPhongMaterial({
-						ambient		: 0x444444,
 						color		: 0x8844AA,
 						shininess	: 300, 
 						specular	: 0x33AA33,
 						shading		: THREE.SmoothShading,
 					});
-
-
-
 				var sphere = new THREE.Mesh( geometry, material );
 				sphere.position.y = 4;
 				sphere.position.x = 0;
@@ -250,7 +242,27 @@
 				sphere.castShadow = true;
 				
 				return sphere;
-				//scene.add( sphere );
+			}
+
+			function setUpPlayerEarth(){
+				var geometry = new THREE.SphereGeometry( 20, 36, 36 );
+				var material  = new THREE.MeshPhongMaterial();
+				material.map    = THREE.ImageUtils.loadTexture('textures/sphere/earthmap1k.jpg');
+				material.map.minFilter = THREE.LinearFilter;
+				material.bumpMap    = THREE.ImageUtils.loadTexture('textures/sphere/earthbump1k.jpg');
+				material.bumpMap.minFilter = THREE.LinearFilter;
+				material.bumpScale = 0.8;
+				material.specularMap    = THREE.ImageUtils.loadTexture('textures/sphere/earthspec1k.jpg');
+				material.specular  = new THREE.Color('grey');
+
+
+				var sphere = new THREE.Mesh( geometry, material );
+				sphere.position.y = 65;
+				sphere.position.x = 0;
+				sphere.position.z = 0;
+				sphere.castShadow = true;
+				sphere.name = "Terra";
+				return sphere;
 			}
 
 			function setUpText(text, fontSize, x, y, z){
@@ -304,6 +316,8 @@
 
 				scene.add( campo );
 
+				scene.add(setUpPlayerEarth());
+
 			}
 
 			function setUpLight(){
@@ -348,24 +362,11 @@
 
 					spotLight.position.set( entry.x, entry.y, entry.z );		
  					spotLight.intensity = 0.4;
-//					spotLight.shadowDarkness = 0.4;
+					//spotLight.shadowDarkness = 0.4;
 					spotLight.shadowMapWidth = 2048;
 					spotLight.shadowMapHeight = 2048;
 					scene.add( spotLight );
 				});
-
-				// light = new THREE.AmbientLight( 0x222222 );
-				// light.intensity = 0.4;
-				// //scene.add( light );
-				// spot = new THREE.SpotLight();
-    //             spot.shadowCameraNear = 1; // keep near and far planes as tight as possible
-    //             spot.shadowCameraFar = 300; // shadows not cast past the far plane
-    //             spot.shadowCameraVisible = true;
-				// spot.target.position.set( 0, 0, 0 );
-    //             spot.castShadow = true;
-
-    //             spot.position.set(300, 300, 300);
-    //             //scene.add(spot);
 
 			}
 
@@ -384,7 +385,7 @@
 
 				//scene.add( setUpSkyDome() );
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
 				//renderer.setClearColor( scene.fog.color );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -446,6 +447,12 @@
 							entry.lookAt( new THREE.Vector3( camera.position.x, 0, camera.position.z ) );
 						});
 					}
+
+					if(entry.name == "Terra"){
+						var delta = 0.3;
+						entry.rotation.y  += 1/32 * delta;
+					}
+
 				});
 
 				renderer.render( scene, camera );
