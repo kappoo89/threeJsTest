@@ -36,6 +36,13 @@
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/KeyboardState.js"></script>
 
+
+		<script src="js/loaders/collada/Animation.js"></script>
+		<script src="js/loaders/collada/AnimationHandler.js"></script>
+		<script src="js/loaders/collada/KeyFrameAnimation.js"></script>
+
+		<script src="js/loaders/ColladaLoader.js"></script>
+
 		<script src="fonts/helvetiker_regular.typeface.js"></script>
 
 		<!-- skybox shaders (textured)-->
@@ -139,6 +146,49 @@
 			var keyboard = new KeyboardState();
 			var autoPilot = true;
 
+			var loader = new THREE.ColladaLoader();
+
+			function loadDAE(){
+				loader.options.convertUpAxis = true;
+				loader.load( 'models/canestro.dae', function ( collada ) {
+				
+					console.log(collada);
+					dae = collada.scene;
+
+					dae.traverse( function ( child ) {
+
+						if ( child instanceof THREE.SkinnedMesh ) {
+
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+
+						}
+
+					} );
+
+					dae.scale.x = dae.scale.y = dae.scale.z = 0.8;
+	 				dae.position.y = -44;
+	 				dae.position.x = -100;
+	 				dae.position.z = 6;
+					dae.updateMatrix();
+
+					scene.add(dae);
+
+					var dae2 = dae.clone();
+
+					
+	 				//dae2.position.x = 100;
+	 				dae2.rotation.y = 3.14;
+					dae2.position.z = -4.5;
+					dae2.position.x = 100;
+
+
+					scene.add(dae2);
+
+
+				} );
+
+			}
 
 			function setUpSkyDome(){
 			    
@@ -318,6 +368,8 @@
 
 				scene.add(setUpPlayerEarth());
 
+				loadDAE();
+
 			}
 
 			function setUpLight(){
@@ -381,7 +433,7 @@
 				scene = new THREE.Scene();
 				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
-				//setUpSkyDome();
+				setUpSkyDome();
 
 				//scene.add( setUpSkyDome() );
 
