@@ -54,7 +54,8 @@
 			loader.options.convertUpAxis = true;
 			
 			//loader.load( 'models/monster.dae', function ( collada ) {
-			loader.load( 'models/canestro.dae', function ( collada ) {
+			//loader.load( 'models/canestro.dae', function ( collada ) {
+			loader.load( 'models/logo.dae', function ( collada ) {
 			//loader.load( 'models/test1.dae', function ( collada ) {
 			
 
@@ -71,8 +72,8 @@
 
 				} );
 
-				dae.scale.x = dae.scale.y = dae.scale.z = 0.1;
- 				dae.position.y = -5.5;				
+				dae.scale.x = dae.scale.y = dae.scale.z = 1;
+				
 				dae.updateMatrix();
 
 				init();
@@ -122,10 +123,11 @@
 				scene.add( dae );
 
 				particleLight = new THREE.Mesh( new THREE.SphereGeometry( 4, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0xffffff } ) );
+				//var pointLightHelper = new THREE.PointLightHelper( particleLight, 1 );
+				//scene.add( pointLightHelper );
 				scene.add( particleLight );
 
-				var axisHelper = new THREE.AxisHelper( 5 );
-				particleLight.add( axisHelper );
+				
 
 				// Lights
 
@@ -139,8 +141,7 @@
 				scene.add( directionalLight );
 
 				var pointLight = new THREE.PointLight( 0xffffff, 4 );
-
-				particleLight.add( pointLight );
+				//particleLight.add( pointLight );
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setClearColor(new THREE.Color('lightgrey'), 1);

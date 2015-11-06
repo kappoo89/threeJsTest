@@ -98,8 +98,8 @@
 
 			var players = [
 							  {
-							    "name": "Valerio Costa",
-							    "ruolo": "Developer",
+							    "name": "Enza Zeffiro",
+							    "ruolo": "Food designer",
 							    "numero": 4,
 							    "img": "4 Valerio Costa.png",
 							    "positionX": 50,
@@ -188,8 +188,39 @@
 
 				} );
 
+				//loader.load( 'models/logo3.dae', function ( collada ) {
+				loader.load( 'models/coca.dae', function ( collada ) {
+				
+					console.log(collada);
+					logo = collada.scene;
+
+					logo.traverse( function ( child ) {
+
+						if ( child instanceof THREE.SkinnedMesh ) {
+
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+
+						}
+
+					} );
+
+					logo.scale.x = logo.scale.y = logo.scale.z = 0.5;
+	 				logo.position.y = 0;
+	 				logo.position.x = 0;
+	 				logo.position.z = 0;
+					logo.updateMatrix();
+
+					scene.add(logo);
+
+			
+
+
+				} );				
+
 			}
 
+			
 			function setUpSkyDome(){
 			    
 			    // prepare ShaderMaterial
@@ -366,7 +397,7 @@
 
 				scene.add( campo );
 
-				scene.add(setUpPlayerEarth());
+				//scene.add(setUpPlayerEarth());
 
 				loadDAE();
 
