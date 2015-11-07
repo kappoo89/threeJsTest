@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -14,165 +13,53 @@
 			}
 		</style>
 	</head>
-	<body>
 
-		<script src="js/three.min.js"></script>
+	<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'>
 
-		<script src="js/Projector.js"></script>
-		<script src="js/CanvasRenderer.js"></script>
-		<script src="js/OrbitControls.js"></script>
-
-
-
-		<video id="video" autoplay style="display:none" muted loop>
-			<source src="textures/video/friwix.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
-		</video>
+		<script src='../global/js/three.min.js'></script>
+		<script src='../global/js/threex.videotexture.js'></script>
+		<script src='../global/js/OrbitControls.js'></script>
 
 		<script>
 
-			var camera, scene, renderer, controls;
+			var camera, controls, renderer, videoTexture, scene;
 
-			var video, image, imageContext, texture;
+			var lastTimeMsec= null;
 
-			var imageReflection, imageReflectionContext, imageReflectionGradient, textureReflection;
+			function setUpSkyDome(){
+				
+				var path = "../global/textures/cube/";
+				var format = '.jpg';
+				var urls = [
+					path + 'px' + format, path + 'nx' + format,
+					path + 'py' + format, path + 'ny' + format,
+					path + 'pz' + format, path + 'nz' + format
+				];
+				
+				var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
+				var material = new THREE.MeshBasicMaterial( { color: 0xffffff, envMap: textureCube, refractionRatio: 0.95 } );				
 
-			var mesh;
-
-			var windowHalfX = window.innerWidth / 2;
-			var windowHalfY = window.innerHeight / 2;
-
-			var VideoW = 640;
-			var VideoH = 360;
-
-			init();
-			animate();
-
-			function setUpCamera() {
-				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-				camera.position.z = 1000;
-				return camera;
-			}
-			
-			function addDots() {
-				//var separation = 150;
-				var separation = 10;
-				var amountx = 100;
-				var amounty = 10;
-
-				var PI2 = Math.PI * 2;
-				var material = new THREE.SpriteCanvasMaterial( {
-
-					color: 0x0808080,
-					program: function ( context ) {
-
-						context.beginPath();
-						context.arc( 0, 0, 0.5, 0, PI2, true );
-						context.fill();
-
-					}
-
+				// Skybox
+				var shader = THREE.ShaderLib[ "cube" ];
+				shader.uniforms[ "tCube" ].value = textureCube;
+				var material = new THREE.ShaderMaterial( {
+					fragmentShader: shader.fragmentShader,
+					vertexShader: shader.vertexShader,
+					uniforms: shader.uniforms,
+					depthWrite: false,
+					side: THREE.BackSide
 				} );
 
-				for ( var ix = 0; ix < amountx; ix++ ) {
-
-					for ( var iy = 0; iy < amounty; iy++ ) {
-
-						particle = new THREE.Sprite( material );
-						particle.position.x = ix * separation - ( ( amountx * separation ) / 2 );
-						particle.position.y = 0;
-						particle.position.z = iy * separation - ( ( amounty * separation ) / 2 );
-						particle.scale.x = particle.scale.y = 2;
-						scene.add( particle );
-
-					}
-
-				}
+				var skyDome = new THREE.Mesh( new THREE.BoxGeometry( 1000, 1000, 1000 ), material );
+				return skyDome;
 			}
 
-			function addReflection(plane){
-
-				imageReflection = document.createElement( 'canvas' );
-				imageReflection.width = VideoW;
-				imageReflection.height = VideoH;
-
-				imageReflectionContext = imageReflection.getContext( '2d' );
-				imageReflectionContext.fillStyle = '#000000';
-				imageReflectionContext.fillRect( 0, 0, VideoW, VideoH );
-
-				imageReflectionGradient = imageReflectionContext.createLinearGradient( 0, 0, 0, VideoH );
-				imageReflectionGradient.addColorStop( 0.2, 'rgba(240, 240, 240, 1)' );
-				imageReflectionGradient.addColorStop( 1, 'rgba(240, 240, 240, 0.8)' );
-
-				textureReflection = new THREE.Texture( imageReflection );
-				
-				var materialReflection = new THREE.MeshBasicMaterial( { map: textureReflection, side: THREE.BackSide, overdraw: 0.5 } );
-
-				mesh = new THREE.Mesh( plane, materialReflection );
-				mesh.position.y = -306;
-				mesh.rotation.x = - Math.PI;
-				mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.5;
-				scene.add( mesh );
-			}
-
-			function setUpVideo() {
-				video = document.getElementById( 'video' );
-
-				image = document.createElement( 'canvas' );
-				image.width = VideoW;
-				image.height = VideoH;
-
-				imageContext = image.getContext( '2d' );
-				imageContext.fillStyle = '#000000';
-				imageContext.fillRect( 0, 0, VideoW, VideoH );
-
-				texture = new THREE.Texture( image );
-
-				var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5 } );
-
-				var plane = new THREE.PlaneGeometry( VideoW, VideoH, 4, 4 );
-
-				mesh = new THREE.Mesh( plane, material );
-				mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.5;
-
-				mesh.position.y = 0;
-
-				return mesh;
-			}
-
-			function setUpOrbitController(){
-				controls = new THREE.OrbitControls( camera, renderer.domElement );
-				controls.enableDamping = true;
-				controls.dampingFactor = 0.25;
-				controls.enableZoom = true;
-			}
-
-			function init() {
-
-
-				renderer = new THREE.CanvasRenderer();
-				renderer.setClearColor( 0xEEEEEE );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-				document.body.appendChild( renderer.domElement );
-
-				camera = setUpCamera();
-
-				scene = new THREE.Scene();
-
-				scene.add(setUpVideo());
-
-				window.addEventListener( 'resize', onWindowResize, false );
-
-				//addReflection(plane);
-				//addDots();
-
-				//ORBIT CONTROLLER
-				setUpOrbitController();
+			function setUpCamera(){
+				camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 10000 );
+				camera.position.z = 3;
 			}
 
 			function onWindowResize() {
-
 				windowHalfX = window.innerWidth / 2;
 				windowHalfY = window.innerHeight / 2;
 
@@ -182,35 +69,76 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 			}
 
-			function animate() {
+			function setUpOrbitController(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+
+			function init(){
+
+				scene = new THREE.Scene();
+				scene.add( setUpSkyDome() );
+				
+				// init renderer
+				renderer	= new THREE.WebGLRenderer({
+					antialias	: true,
+				});
+				renderer.setClearColor(new THREE.Color('lightgrey'), 1);
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );
+
+				setUpCamera();
+
+				window.addEventListener( 'resize', onWindowResize, false );	
+
+				setUpOrbitController();
+
+				//////////////////////////////
+				//////////////////////////////
+				//////////////////////////////
+				
+				//var url	= 'textures/video/sintel.mp4'
+				var url	= '../global/textures/video/tmb_animation.mp4'
+				
+				// create the videoTexture
+				videoTexture= new THREEx.VideoTexture(url)
+
+				// use the texture in a THREE.Mesh
+				var geometry	= new THREE.CubeGeometry(1,1,1);
+				var material	= new THREE.MeshBasicMaterial({
+					map	: videoTexture.texture
+				});
+				material.map.minFilter = THREE.LinearFilter;
+
+				var mesh	= new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+				
+			}
+
+			function animate(nowMsec) {
+
+				//Update camera texture
+				lastTimeMsec	= lastTimeMsec || nowMsec-1000/60;
+				var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec);
+				lastTimeMsec	= nowMsec;
+				videoTexture.update(deltaMsec/1000, nowMsec/1000);
+
+
 				requestAnimationFrame( animate );
 				controls.update();
 				render();
 			}
 
 			function render() {
-
-				if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
-
-					imageContext.drawImage( video, 0, 0 );
-
-					if ( texture ) texture.needsUpdate = true;
-					//if ( textureReflection ) textureReflection.needsUpdate = true;
-
-				}
-
-				//RENDER REFLECTION
-
-				//imageReflectionContext.drawImage( image, 0, 0 );
-				//imageReflectionContext.fillStyle = imageReflectionGradient;
-				//imageReflectionContext.fillRect( 0, 0, 480, 204 );
-				//imageReflectionContext.fillRect( 0, 0, VideoW, VideoH );
-
 				renderer.render( scene, camera );
 			}
-
-
+			
+			init();	
+			animate();
 		</script>
-
 	</body>
 </html>

@@ -33,10 +33,10 @@
 	</head>
 
 	<body>
-		<script src="js/three.min.js"></script>
-		<script src="js/OrbitControls.js"></script>
+		<script src="../global/js/three.min.js"></script>
+		<script src="../global/js/OrbitControls.js"></script>
 
-		<script src="fonts/helvetiker_regular.typeface.js"></script>
+		<script src="../global/fonts/helvetiker_regular.typeface.js"></script>
 
 		<script>
 
@@ -71,7 +71,7 @@
 
 			function setUpSkyDome(){
 				
-				var path = "textures/cube/";
+				var path = "../global/textures/cube/";
 				var format = '.jpg';
 				var urls = [
 					path + 'px' + format, path + 'nx' + format,
@@ -198,30 +198,15 @@
 				    scene.add( textMesh );
 
 					var geometry = new THREE.BoxGeometry( 10, 10, 1 );
-					var materialLogo = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/'+entry.img) } );
+					var materialLogo = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('../global/textures/players/'+entry.img) } );
 					materialLogo.map.minFilter = THREE.LinearFilter;
 
-				    var material2 = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
-					material2.map.minFilter = THREE.LinearFilter;
-
-				    var material3 = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
-					material3.map.minFilter = THREE.LinearFilter;
-
-				    var material4 = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
-					material4.map.minFilter = THREE.LinearFilter;
-
-				    var material5 = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
-					material5.map.minFilter = THREE.LinearFilter;
-
-				    var material6 = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('textures/wood-floor.jpg') } );
-					material6.map.minFilter = THREE.LinearFilter;
-
+				    var materialWood = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture('../global/textures/wood-floor.jpg') } );
+					materialWood.map.minFilter = THREE.LinearFilter;
 				  
-				    var materials = [material2, material3, material4, material5,materialLogo, material6];
+				    var materials = [materialWood, materialWood, materialWood, materialWood, materialLogo, materialWood];
   
    					var meshFaceMaterial = new THREE.MeshFaceMaterial( materials );
-
-
 					
 					var cube = new THREE.Mesh( geometry, meshFaceMaterial );
 					cube.position.y = 35;
@@ -232,22 +217,6 @@
 
 				});
 
-				
-
-				// var geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
-				// var material =  new THREE.MeshPhongMaterial( { color:0xffffff, shading: THREE.FlatShading } );
-
-				// for ( var i = 0; i < 500; i ++ ) {
-
-				// 	var mesh = new THREE.Mesh( geometry, material );
-				// 	mesh.position.x = ( Math.random() - 0.5 ) * 1000;
-				// 	mesh.position.y = ( Math.random() - 0.5 ) * 1000;
-				// 	mesh.position.z = ( Math.random() - 0.5 ) * 1000;
-				// 	mesh.updateMatrix();
-				// 	mesh.matrixAutoUpdate = false;
-				// 	scene.add( mesh );
-
-				// }
 			}
 
 			function setUpLight(){

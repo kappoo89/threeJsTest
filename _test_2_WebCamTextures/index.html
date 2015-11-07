@@ -15,9 +15,9 @@
 	</head>
 
 	<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'>
-		<script src='js/three.min.js'></script>
-		<script src='js/threex.webcamtexture.js'></script>
-		<script src='js/OrbitControls.js'></script>
+		<script src='../global/js/three.min.js'></script>
+		<script src='../global/js/threex.webcamtexture.js'></script>
+		<script src='../global/js/OrbitControls.js'></script>
 		<script>
 
 			var camera, controls, renderer, webcamTexture, scene;
@@ -48,7 +48,7 @@
 
 			function setUpSkyDome(){
 				
-				var path = "textures/cube/";
+				var path = "../global/textures/cube/";
 				var format = '.jpg';
 				var urls = [
 					path + 'px' + format, path + 'nx' + format,

@@ -12,35 +12,20 @@
 				overflow: hidden;
 			}
 
-			#info {
-				color: #fff;
-				position: absolute;
-				top: 10px;
-				width: 100%;
-				text-align: center;
-				z-index: 100;
-				display:block;
-
-			}
-
-			a { color: skyblue }
 		</style>
 	</head>
 	<body>
-		<div id="info">
-			<a href="http://threejs.org" target="_blank">three.js</a> -
-			monster by <a href="http://www.3drt.com/downloads.htm" target="_blank">3drt</a>
-		</div>
+		
 
-		<script src="js/three.min.js"></script>
-		<script src="js/OrbitControls.js"></script>
+		<script src="../global/js/three.min.js"></script>
+		<script src="../global/js/OrbitControls.js"></script>
 
 
-		<script src="js/loaders/collada/Animation.js"></script>
-		<script src="js/loaders/collada/AnimationHandler.js"></script>
-		<script src="js/loaders/collada/KeyFrameAnimation.js"></script>
+		<script src="../global/js/loaders/collada/Animation.js"></script>
+		<script src="../global/js/loaders/collada/AnimationHandler.js"></script>
+		<script src="../global/js/loaders/collada/KeyFrameAnimation.js"></script>
 
-		<script src="js/loaders/ColladaLoader.js"></script>
+		<script src="../global/js/loaders/ColladaLoader.js"></script>
 
 		<script>
 
@@ -53,10 +38,10 @@
 			var loader = new THREE.ColladaLoader();
 			loader.options.convertUpAxis = true;
 			
-			//loader.load( 'models/monster.dae', function ( collada ) {
+			loader.load( '../global/models/monster.dae', function ( collada ) {
 			//loader.load( 'models/canestro.dae', function ( collada ) {
-			loader.load( 'models/logo.dae', function ( collada ) {
-			//loader.load( 'models/test1.dae', function ( collada ) {
+			//loader.load( 'models/logo.dae', function ( collada ) {
+			
 			
 
 				dae = collada.scene;
@@ -64,15 +49,13 @@
 				dae.traverse( function ( child ) {
 
 					if ( child instanceof THREE.SkinnedMesh ) {
-
 						var animation = new THREE.Animation( child, child.geometry.animation );
 						animation.play();
-
 					}
 
 				} );
 
-				dae.scale.x = dae.scale.y = dae.scale.z = 1;
+				dae.scale.x = dae.scale.y = dae.scale.z = 0.005;
 				
 				dae.updateMatrix();
 
