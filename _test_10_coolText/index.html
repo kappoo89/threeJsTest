@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - orbit controls</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+
+	<body>
+		<script src="../global/js/three.min.js"></script>
+		<script src="../global/js/OrbitControls.js"></script>
+
+		<script>
+
+			var camera, controls, scene, renderer;
+
+			init();
+			animate();
+
+			function init() {
+
+				scene = new THREE.Scene();
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );
+
+				setUpCamera();
+
+				setUpControls();
+
+				// world
+				setUpWorld();
+
+				// lights
+				setUpLight();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+			
+			function setUpControls() {
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+			
+			function setUpCamera() {
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 500;
+			}
+
+			function setUpWorld() {
+				
+				var textGeom = new THREE.TextGeometry( "NETFLIX", {
+			        size: 10, 10: 0.5, curveSegments: 4,
+					font: "helvetiker", style: "normal",
+			    });
+
+			    var material = new THREE.MeshPhongMaterial({
+					color: 0xEEEEEE,
+					emissive: 0x072534,
+					side: THREE.DoubleSide,
+					shading: THREE.FlatShading
+				})
+
+			    var textMesh = new THREE.Mesh( textGeom, material );
+				textMesh.position.x = x;
+				textMesh.position.y = y;
+				textMesh.position.z = z;
+
+				textMesh.castShadow = true;
+				
+				scene.add(textMesh);
+
+				
+			}
+
+			function setUpLight(){
+							}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+				render();
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>
