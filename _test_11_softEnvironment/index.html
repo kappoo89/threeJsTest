@@ -15,7 +15,7 @@
 
 		<div id="container"></div>
 
-		<script src="../global/js/2three.min.js"></script>
+		<script src="../global/js/three.min.js"></script>
 
 		<script src="../global/js/OrbitControls.js"></script>
 
@@ -69,6 +69,12 @@
 				controls.enableDamping = true;
 				controls.dampingFactor = 0.25;
 				controls.enableZoom = true;
+
+				controls.minDistance = 100;
+				controls.maxDistance = 300;
+
+				controls.maxPolarAngle = Math.PI/2; 
+
 			}
 
 			function setUpCamera() {
@@ -141,6 +147,7 @@
 				var loader = new THREE.JSONLoader();
 
 				loader.load( "../global/models/flamingo.js", function( geometry ) {
+				//loader.load( "../global/models/moose_hackfix.js", function( geometry ) {
 
 					var material = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0xffffff, shininess: 20, morphTargets: true, vertexColors: THREE.FaceColors, shading: THREE.FlatShading } );
 					var mesh = new THREE.Mesh( geometry, material );
