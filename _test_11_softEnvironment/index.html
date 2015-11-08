@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - lights - hemisphere light</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+		<script src="../global/js/2three.min.js"></script>
+
+		<script src="../global/js/OrbitControls.js"></script>
+
+		<script type="x-shader/x-vertex" id="vertexShader">
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+				vWorldPosition = worldPosition.xyz;
+
+				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+			}
+		</script>
+
+		<script type="x-shader/x-fragment" id="fragmentShader">
+			uniform vec3 topColor;
+			uniform vec3 bottomColor;
+			uniform float offset;
+			uniform float exponent;
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				float h = normalize( vWorldPosition + offset ).y;
+				gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
+
+			}
+		</script>
+
+		<script>
+
+
+			var camera, scene, renderer, dirLight, hemiLight, controls;
+			var mixers = [];
+
+			var clock = new THREE.Clock();
+
+			init();
+			animate();
+
+			function setUpControls(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+
+			function setUpCamera() {
+				camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.set( 0, 0, 250 );
+			}
+
+			function setUpLights(){
+				hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
+				hemiLight.color.setHSL( 0.6, 1, 0.6 );
+				hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+				hemiLight.position.set( 0, 500, 0 );
+				scene.add( hemiLight );
+
+				//
+
+				dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+				dirLight.color.setHSL( 0.1, 1, 0.95 );
+				dirLight.position.set( -1, 1.75, 1 );
+				dirLight.position.multiplyScalar( 50 );
+				scene.add( dirLight );
+
+				dirLight.castShadow = true;
+
+				dirLight.shadowMapWidth = 2048;
+				dirLight.shadowMapHeight = 2048;
+
+				var d = 50;
+
+				dirLight.shadowCameraLeft = -d;
+				dirLight.shadowCameraRight = d;
+				dirLight.shadowCameraTop = d;
+				dirLight.shadowCameraBottom = -d;
+
+				dirLight.shadowCameraFar = 3500;
+				dirLight.shadowBias = -0.0001;
+				//dirLight.shadowCameraVisible = true;
+			}
+
+			function setUpGround(){
+				var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
+				var groundMat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x050505 } );
+				groundMat.color.setHSL( 0.095, 1, 0.75 );
+
+				var ground = new THREE.Mesh( groundGeo, groundMat );
+				ground.rotation.x = -Math.PI/2;
+				ground.position.y = -33;
+				scene.add( ground );
+
+				ground.receiveShadow = true;
+			}
+
+			function setUpSkydome(){
+				var vertexShader = document.getElementById( 'vertexShader' ).textContent;
+				var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+				var uniforms = {
+					topColor: 	 { type: "c", value: new THREE.Color( 0x0077ff ) },
+					bottomColor: { type: "c", value: new THREE.Color( 0xffffff ) },
+					offset:		 { type: "f", value: 33 },
+					exponent:	 { type: "f", value: 0.6 }
+				};
+				uniforms.topColor.value.copy( hemiLight.color );
+
+				scene.fog.color.copy( uniforms.bottomColor.value );
+
+				var skyGeo = new THREE.SphereGeometry( 4000, 32, 15 );
+				var skyMat = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
+
+				var sky = new THREE.Mesh( skyGeo, skyMat );
+				scene.add( sky );
+			}
+
+			function addModel(){
+				var loader = new THREE.JSONLoader();
+
+				loader.load( "../global/models/flamingo.js", function( geometry ) {
+
+					var material = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0xffffff, shininess: 20, morphTargets: true, vertexColors: THREE.FaceColors, shading: THREE.FlatShading } );
+					var mesh = new THREE.Mesh( geometry, material );
+
+					var s = 0.35;
+					mesh.scale.set( s, s, s );
+					mesh.position.y = 15;
+					mesh.rotation.y = -1;
+
+					mesh.castShadow = true;
+					mesh.receiveShadow = true;
+
+					scene.add( mesh );
+
+					var mixer = new THREE.AnimationMixer( mesh );
+					mixer.addAction( new THREE.AnimationAction( geometry.animations[ 0 ] ).warpToDuration( 1 ) );
+					mixers.push( mixer );
+
+				} );
+			}
+
+			function init() {
+
+				var container = document.getElementById( 'container' );
+
+				setUpCamera();
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0xffffff, 1, 5000 );
+				scene.fog.color.setHSL( 0.6, 0, 1 );
+
+				setUpLights();			
+
+				setUpGround();
+				setUpSkydome();
+
+				// MODEL
+				addModel();
+
+				// RENDERER
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( scene.fog.color );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.cullFace = THREE.CullFaceBack;
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				setUpControls();
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+			}
+
+			function render() {
+
+				var delta = clock.getDelta();
+
+				//controls.update();
+
+				for ( var i = 0; i < mixers.length; i ++ ) {
+
+					mixers[ i ].update( delta );
+
+				}
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>

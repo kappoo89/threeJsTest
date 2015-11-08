@@ -17,10 +17,16 @@
 	<body>
 		<script src="../global/js/three.min.js"></script>
 		<script src="../global/js/OrbitControls.js"></script>
+		<script src="../global/fonts/helvetiker_regular.typeface.js"></script>
+
 
 		<script>
 
 			var camera, controls, scene, renderer;
+
+			var axisHelper = new THREE.AxisHelper(100);
+
+			var pointLight1,pointLight2,pointLight3;
 
 			init();
 			animate();
@@ -29,7 +35,10 @@
 
 				scene = new THREE.Scene();
 
-				renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({antialias:true});
+				renderer.setClearColor( 0xdddddd );
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -37,66 +46,126 @@
 
 				setUpCamera();
 
-				setUpControls();
-
-				// world
 				setUpWorld();
 
-				// lights
 				setUpLight();
 
 				window.addEventListener( 'resize', onWindowResize, false );
+				setUpControls();
 
 			}
-			
+						
+			function setUpCamera() {
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 50;
+			}
+
+			function setUpWorld() {
+
+				//TEXT
+				var textGeom = new THREE.TextGeometry( "THE\nMADB\nOX", {
+			        size: 10, height:5, curveSegments: 4,
+					font: "helvetiker", style: "normal",
+			    });
+			    var textMat = new THREE.MeshLambertMaterial({
+					color: 0xDDDDDD,
+					emissive: 0x000000
+				});
+			    var textMesh = new THREE.Mesh( textGeom, textMat );
+				textMesh.castShadow = true;
+				textMesh.position.x = -23.5;
+				textMesh.position.y = -4.5;
+				textMesh.name="testo";
+				scene.add(textMesh);
+
+				//PLANE
+				var planeGeom = new THREE.PlaneGeometry( 200, 200, 32 );
+				var planeMat = new THREE.MeshLambertMaterial({
+					color: 0xDDDDDD,
+					emissive: 0x000000
+				});
+			    var plane = new THREE.Mesh( planeGeom, planeMat );
+				plane.receiveShadow = true;
+								textMesh.castShadow = true;
+
+				plane.name="piano";
+				plane.add(axisHelper);
+				scene.add(plane);
+			}
+
+			function setUpLight(){
+				
+				var directionalLight = new THREE.DirectionalLight( 0xffffFF, 0.9);
+				directionalLight.position.set( 0, 0, 100 );
+				scene.add( directionalLight );
+
+
+				pointLight1 = new THREE.PointLight( 0xff0000, 5, 20 );
+				//pointLight1.position.set( -50, 10, 0 );
+				pointLight1.position.set( 0, 10, 0 );
+				scene.add( pointLight1 );
+
+
+				pointLight2 = new THREE.PointLight( 0x0000ff, 5, 20 );
+				pointLight2.position.set( -60, -10, 0 );
+				scene.add( pointLight2 );
+
+
+				// var sphereSize = 1;
+				// var pointLightHelper = new THREE.PointLightHelper( pointLight1, sphereSize );
+				// pointLight1.add( pointLightHelper );
+
+
+
+				var spotLight	= new THREE.SpotLight( 0xFFFFFF );
+
+				spotLight.shadowCameraNear	= 0.1;
+				spotLight.shadowCameraFar = 200;
+
+				spotLight.shadowCameraVisible = true;
+				spotLight.target.position.set( 0, 0, 0 );
+
+				spotLight.castShadow = true;
+
+				spotLight.position.set( -50, 50, 50 );		
+				spotLight.intensity = 0.1;
+				//spotLight.shadowDarkness = 0.4;
+				spotLight.shadowMapWidth = 2048;
+				spotLight.shadowMapHeight = 2048;
+				scene.add( spotLight );
+
+
+			}
+
 			function setUpControls() {
 				controls = new THREE.OrbitControls( camera, renderer.domElement );
 				controls.enableDamping = true;
 				controls.dampingFactor = 0.25;
 				controls.enableZoom = true;
 			}
-			
-			function setUpCamera() {
-				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-				camera.position.z = 500;
-			}
-
-			function setUpWorld() {
-				
-				var textGeom = new THREE.TextGeometry( "NETFLIX", {
-			        size: 10, 10: 0.5, curveSegments: 4,
-					font: "helvetiker", style: "normal",
-			    });
-
-			    var material = new THREE.MeshPhongMaterial({
-					color: 0xEEEEEE,
-					emissive: 0x072534,
-					side: THREE.DoubleSide,
-					shading: THREE.FlatShading
-				})
-
-			    var textMesh = new THREE.Mesh( textGeom, material );
-				textMesh.position.x = x;
-				textMesh.position.y = y;
-				textMesh.position.z = z;
-
-				textMesh.castShadow = true;
-				
-				scene.add(textMesh);
-
-				
-			}
-
-			function setUpLight(){
-							}
 
 			function onWindowResize() {
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 				renderer.setSize( window.innerWidth, window.innerHeight );
-			}
+			}			
 
 			function animate() {
+
+				//pointLight1.position.x = pointLight1.position.x + 1;
+
+				if(pointLight1.intensity >0 ){
+					pointLight1.intensity = pointLight1.intensity - 1.5;
+				}else if(pointLight1.intensity < 0){
+					pointLight1.intensity = pointLight1.intensity + 1.5;
+				}
+				//else if(pointLight1.intensity < 5)
+				//	pointLight1.intensity = pointLight1.intensity + 1;
+
+				pointLight2.position.x = pointLight2.position.x + 1;
+
+
+
 				requestAnimationFrame( animate );
 				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
 				render();
