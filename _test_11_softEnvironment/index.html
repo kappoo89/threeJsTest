@@ -69,10 +69,6 @@
 			var colorGround = 0x999999;
 			var colorSKy = 0x999999;
 
-			var animations;
-			var kfAnimations = [ ];
-			var kfAnimationsLength = 0;
-
 			init();
 			animate();
 
@@ -85,13 +81,8 @@
 					//console.log(collada);
 					mesh = collada.scene;
 
-					animations = collada.animations;
-					kfAnimationsLength = animations.length;
-
 					mesh.castShadow = true;
 					mesh.receiveShadow = true;
-
-					start();
 
 					mesh.scale.x = mesh.scale.y = mesh.scale.z = scale;
 	 				mesh.position.x = x;
@@ -108,45 +99,6 @@
 					console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
 				});
 			}
-
-			function start() {
-
-				for ( var i = 0; i < kfAnimationsLength; ++i ) {
-
-					var animation = kfAnimations[i];
-
-					for ( var h = 0, hl = animation.hierarchy.length; h < hl; h++ ) {
-
-						var keys = animation.data.hierarchy[ h ].keys;
-						var sids = animation.data.hierarchy[ h ].sids;
-						var obj = animation.hierarchy[ h ];
-
-						if ( keys.length && sids ) {
-
-							for ( var s = 0; s < sids.length; s++ ) {
-
-								var sid = sids[ s ];
-								var next = animation.getNextKeyWith( sid, h, 0 );
-
-								if ( next ) next.apply( sid );
-
-							}
-
-							obj.matrixAutoUpdate = false;
-							animation.data.hierarchy[ h ].node.updateMatrix();
-							obj.matrixWorldNeedsUpdate = true;
-
-						}
-
-					}
-
-					animation.loop = false;
-					animation.play();
-
-				}
-
-			}
-
 
 			function addModelJson(url, scale, x,y,z){
 				var loader = new THREE.JSONLoader();
@@ -215,7 +167,7 @@
 				//addModelDae("dae/canestro.dae", 3, 0 ,-200, 0);
 				//addModelDae("dae/logo.dae", 0.5, 0 ,-50, 0);
 				//addModelDae("dae/monster/monster.dae", 0.05, 0 ,-30, 0);
-				addModelDae("dae/prova.dae", 0.5, 0 ,-30, 0);
+				addModelDae("dae/test.dae", 0.1, 0 ,0, 0);
 
 
 				//MODEL JSON
