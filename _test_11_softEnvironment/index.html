@@ -19,6 +19,14 @@
 
 		<script src="../global/js/OrbitControls.js"></script>
 
+		<script src="../global/js/loaders/OBJLoader.js"></script>
+		<script src="../global/js/loaders/ColladaLoader.js"></script>
+
+		<script src="../global/js/loaders/collada/Animation.js"></script>
+		<script src="../global/js/loaders/collada/AnimationHandler.js"></script>
+		<script src="../global/js/loaders/collada/KeyFrameAnimation.js"></script>
+
+
 		<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec3 vWorldPosition;
 
@@ -61,8 +69,190 @@
 			var colorGround = 0x999999;
 			var colorSKy = 0x999999;
 
+			var animations;
+			var kfAnimations = [ ];
+			var kfAnimationsLength = 0;
+
 			init();
 			animate();
+
+			function addModelDae(url, scale, x, y, z){
+				var loaderDae = new THREE.ColladaLoader();
+
+				loaderDae.options.convertUpAxis = true;				
+				loaderDae.load( '../global/models/'+url, function ( collada ) {
+
+					//console.log(collada);
+					mesh = collada.scene;
+
+					animations = collada.animations;
+					kfAnimationsLength = animations.length;
+
+					mesh.castShadow = true;
+					mesh.receiveShadow = true;
+
+					start();
+
+					mesh.scale.x = mesh.scale.y = mesh.scale.z = scale;
+	 				mesh.position.x = x;
+	 				mesh.position.y = y;
+	 				mesh.position.z = z;
+					mesh.updateMatrix();
+
+					scene.add(mesh);
+
+
+
+				},
+				function ( xhr ) {
+					console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+				});
+			}
+
+			function start() {
+
+				for ( var i = 0; i < kfAnimationsLength; ++i ) {
+
+					var animation = kfAnimations[i];
+
+					for ( var h = 0, hl = animation.hierarchy.length; h < hl; h++ ) {
+
+						var keys = animation.data.hierarchy[ h ].keys;
+						var sids = animation.data.hierarchy[ h ].sids;
+						var obj = animation.hierarchy[ h ];
+
+						if ( keys.length && sids ) {
+
+							for ( var s = 0; s < sids.length; s++ ) {
+
+								var sid = sids[ s ];
+								var next = animation.getNextKeyWith( sid, h, 0 );
+
+								if ( next ) next.apply( sid );
+
+							}
+
+							obj.matrixAutoUpdate = false;
+							animation.data.hierarchy[ h ].node.updateMatrix();
+							obj.matrixWorldNeedsUpdate = true;
+
+						}
+
+					}
+
+					animation.loop = false;
+					animation.play();
+
+				}
+
+			}
+
+
+			function addModelJson(url, scale, x,y,z){
+				var loader = new THREE.JSONLoader();
+
+				loader.load( "../global/models/"+url, function( geometry ) {
+
+					var material = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0xffffff, shininess: 20, morphTargets: true, vertexColors: THREE.FaceColors, shading: THREE.FlatShading } );
+					var mesh = new THREE.Mesh( geometry, material );
+
+					var s = scale;
+					mesh.scale.set( s, s, s );
+					mesh.position.x = x;
+					mesh.position.y = y;
+					mesh.position.z = z;
+
+					mesh.rotation.y = -1;
+
+
+
+					mesh.castShadow = true;
+					mesh.receiveShadow = true;
+
+					scene.add( mesh );
+
+					var mixer = new THREE.AnimationMixer( mesh );
+					mixer.addAction( new THREE.AnimationAction( geometry.animations[ 0 ] ).warpToDuration( 1 ) );
+					mixers.push( mixer );
+
+				} );
+			}
+
+			function addModelObj(){
+				var loader = new THREE.OBJLoader(  );
+				loader.load( '../global/models/obj/male02.obj', function ( object ) {
+
+					object.traverse( function ( child ) {
+
+					} );
+
+					object.position.y = -30;
+					object.castShadow = true;
+					object.receiveShadow = true;
+
+					scene.add( object );
+
+				} );
+
+			}
+
+			function init() {
+
+				var container = document.getElementById( 'container' );
+
+				setUpCamera();
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0xffffff, 1, 5000 );
+				scene.fog.color.setHSL( 0.6, 0, 1 );
+
+				setUpLights();			
+
+				setUpGround();
+				setUpSkydome();
+
+				// MODEL DAE
+				//addModelDae("dae/canestro.dae", 3, 0 ,-200, 0);
+				//addModelDae("dae/logo.dae", 0.5, 0 ,-50, 0);
+				//addModelDae("dae/monster/monster.dae", 0.05, 0 ,-30, 0);
+				addModelDae("dae/prova.dae", 0.5, 0 ,-30, 0);
+
+
+				//MODEL JSON
+				
+				//addModelJson("json/cow.js", 0.35, 0,-33,0);
+				//addModelJson("json/flamingo.js", 0.35, 0, 15, 0);		
+				//addModelJson("json/birds_A_black.js", 0.35, 0,25,30);
+				//addModelJson("json/animals_A_black.js", 0.35,0, -33,-0);
+				//addModelJson("json/gator_black.js", 0.35,0, -33,0);
+				//addModelJson("json/moose_life.js", 0.35,0, -33,-0);
+				//addModelJson("json/horse.js", 0.35,0, -33,0);
+				//addModelJson("json/android-animations.js", 6, 0, -33,0);
+
+				//MODEL OBJ
+				//addModelObj();
+
+				// RENDERER
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( scene.fog.color );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.cullFace = THREE.CullFaceBack;
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				setUpControls();
+
+			}
 
 			function setUpControls(){
 				controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -70,11 +260,10 @@
 				controls.dampingFactor = 0.25;
 				controls.enableZoom = true;
 
-				controls.minDistance = 100;
-				controls.maxDistance = 300;
+				//controls.minDistance = 100;
+				//controls.maxDistance = 300;
 
-				controls.maxPolarAngle = Math.PI/2; 
-
+				//controls.maxPolarAngle = Math.PI/2; 
 			}
 
 			function setUpCamera() {
@@ -141,73 +330,7 @@
 
 				var sky = new THREE.Mesh( skyGeo, skyMat );
 				scene.add( sky );
-			}
-
-			function addModel(){
-				var loader = new THREE.JSONLoader();
-
-				loader.load( "../global/models/flamingo.js", function( geometry ) {
-				//loader.load( "../global/models/moose_hackfix.js", function( geometry ) {
-
-					var material = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0xffffff, shininess: 20, morphTargets: true, vertexColors: THREE.FaceColors, shading: THREE.FlatShading } );
-					var mesh = new THREE.Mesh( geometry, material );
-
-					var s = 0.35;
-					mesh.scale.set( s, s, s );
-					mesh.position.y = 15;
-					mesh.rotation.y = -1;
-
-					mesh.castShadow = true;
-					mesh.receiveShadow = true;
-
-					scene.add( mesh );
-
-					var mixer = new THREE.AnimationMixer( mesh );
-					mixer.addAction( new THREE.AnimationAction( geometry.animations[ 0 ] ).warpToDuration( 1 ) );
-					mixers.push( mixer );
-
-				} );
-			}
-
-			function init() {
-
-				var container = document.getElementById( 'container' );
-
-				setUpCamera();
-
-				scene = new THREE.Scene();
-				scene.fog = new THREE.Fog( 0xffffff, 1, 5000 );
-				scene.fog.color.setHSL( 0.6, 0, 1 );
-
-				setUpLights();			
-
-				setUpGround();
-				setUpSkydome();
-
-				// MODEL
-				addModel();
-
-				// RENDERER
-
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setClearColor( scene.fog.color );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				renderer.gammaInput = true;
-				renderer.gammaOutput = true;
-
-				renderer.shadowMap.enabled = true;
-				renderer.shadowMap.cullFace = THREE.CullFaceBack;
-
-				//
-
-				window.addEventListener( 'resize', onWindowResize, false );
-
-				setUpControls();
-
-			}
+			}			
 
 			function onWindowResize() {
 
