@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - collada</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+
+			body {
+				font-family: Monospace;
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+
+			}
+
+			a { color: skyblue }
+
+		</style>
+	</head>
+	<body>
+		<div id="info">
+			<a href="http://threejs.org" target="_blank">three.js</a> -
+			pump by <a href="http://code.google.com/p/kuda" target="_blank">Kuda</a>
+		</div>
+
+		<script src="../global/js/three.min.js"></script>
+
+		<script src="../global/js/loaders/collada/Animation.js"></script>
+		<script src="../global/js/loaders/collada/AnimationHandler.js"></script>
+		<script src="../global/js/loaders/collada/KeyFrameAnimation.js"></script>
+
+		<script src="../global/js/loaders/ColladaLoader.js"></script>
+
+		<script src="../global/js/OrbitControls.js"></script>
+
+		<script type="application/x-glsl" id="sky-vertex">  
+		varying vec2 vUV;
+
+		void main() {  
+		  vUV = uv;
+		  vec4 pos = vec4(position, 1.0);
+		  gl_Position = projectionMatrix * modelViewMatrix * pos;
+		}
+		</script>
+		<script type="application/x-glsl" id="sky-fragment">  
+		uniform sampler2D texture;  
+		varying vec2 vUV;
+
+		void main() {  
+		  vec4 sample = texture2D(texture, vUV);
+		  gl_FragColor = vec4(sample.xyz, sample.w);
+		}
+		</script> 
+
+		<script>
+
+			var durationSec = 3;
+
+			var controls;
+			var scene;
+			var pointLight;
+			var camera;
+			var renderer;
+			var model;
+			var animations;
+			var kfAnimations = [ ];
+			var kfAnimationsLength = 0;
+			var loader = new THREE.ColladaLoader();
+			var lastTimestamp = 0;
+			var progress = 0;
+
+			//loader.load( '../global/models/dae/pump/pump.dae', function ( collada ) {
+			//loader.load( '../global/models/dae/test.dae', function ( collada ) {
+			//loader.load( '../global/models/dae/RIGID.dae', function ( collada ) {
+			loader.load( '../global/models/dae/babbo.dae', function ( collada ) {
+			//loader.load( '../global/models/dae/texture1.dae', function ( collada ) {
+
+				model = collada.scene;
+				animations = collada.animations;
+				kfAnimationsLength = animations.length;
+				model.scale.x = model.scale.y = model.scale.z = 0.0125; // 1/8 scale, modeled in cm
+
+
+				mirrorCubeCameraTest = new THREE.CubeCamera( 0.01, 5000, 2048 );
+				model.children[2].children[0].material.envMap = mirrorCubeCameraTest.renderTarget;
+				
+				init();
+				start();
+				animate( lastTimestamp );
+
+			} );
+
+			// addReflectiveObj(){
+			// 	var cubeCamera = new THREE.CubeCamera( 1, 100000, 128 );
+			// 	scene.add( cubeCamera );
+
+			// 	//Create car
+			// 	var chromeMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: cubeCamera.renderTarget } );
+			// 	var car = new Mesh( carGeometry, chromeMaterial );
+			// 	scene.add( car );
+
+			// 	//Update the render target cube
+			// 	car.setVisible( false );
+			// 	cubeCamera.position.copy( car.position );
+			// 	cubeCamera.updateCubeMap( renderer, scene );
+
+			// 	//Render the scene
+			// 	car.setVisible( true );
+			// 	renderer.render( scene, camera );
+			// };
+
+			function init() {
+
+				var container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				// Camera
+				setUpCamera();
+
+				// Scene
+				scene = new THREE.Scene();
+
+				// Grid
+				setUpGrid();
+
+				// Renderer
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xdddddd );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				// Lights
+				pointLight = new THREE.PointLight( 0xffFFff, 1.75 );
+				scene.add( pointLight );
+
+				//
+				window.addEventListener( 'resize', onWindowResize, false );
+
+
+//				addReflectiveObj();
+
+
+
+				var cubeGeom = new THREE.SphereGeometry( 1, 32, 16 );
+				mirrorCubeCamera = new THREE.CubeCamera( 0.01, 5000, 2048 );
+								
+				var mirrorCubeMaterial = new THREE.MeshPhongMaterial( { envMap: mirrorCubeCamera.renderTarget } );
+				mirrorCube = new THREE.Mesh( cubeGeom, mirrorCubeMaterial );
+				mirrorCube.position.set(5,0,5);
+				//mirrorCubeCamera.position = mirrorCube.position;
+				mirrorCube.add( mirrorCubeCamera );
+				scene.add(mirrorCube);
+
+
+
+
+				// KeyFrame Animations
+				for ( var i = 0; i < kfAnimationsLength; ++i ) {
+
+					var animation = animations[ i ];
+
+					var kfAnimation = new THREE.KeyFrameAnimation( animation );
+					kfAnimation.timeScale = 1;
+					kfAnimations.push( kfAnimation );
+
+				}				
+
+				// Add the COLLADA
+				// model.getObjectByName( 'camEye_camera', true ).visible = false;
+				// model.getObjectByName( 'camTarget_camera', true ).visible = false;
+
+				scene.add( model );
+				setUpControls();
+				setUpSkyDome();
+			}
+
+			function setUpControls(){
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				//controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function setUpCamera(){
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.01, 10000 );
+				camera.position.set( -5.00181875, 3.42631375, 40.3102925 );
+				camera.lookAt( new THREE.Vector3( -1.224774125, 2.18410625, 4.57969125 ) );
+			}
+
+			function setUpSkyDome(){
+			    
+			    // prepare ShaderMaterial
+			    var uniforms = {
+			        texture: { type: 't', value: THREE.ImageUtils.loadTexture('../global/textures/dome.jpg') }
+			    };
+			    var skyMaterial = new THREE.ShaderMaterial( {
+			        uniforms: uniforms,
+			        vertexShader: document.getElementById('sky-vertex').textContent, fragmentShader: document.getElementById('sky-fragment').textContent
+			    });
+
+			    // create Mesh with sphere geometry and add to the scene
+			    var skyBox = new THREE.Mesh(new THREE.SphereGeometry(1000, 60, 40), skyMaterial);
+			    skyBox.scale.set(-1, 1, 1);
+			    skyBox.rotation.order = 'XZY';
+			    skyBox.renderOrder = 500.0;
+
+			    skyBox.name = "skyDome";
+
+			    this.scene.add(skyBox);
+			}
+
+			function setUpGrid(){
+				var material = new THREE.LineBasicMaterial( { color: 0x303030 } );
+				var geometry = new THREE.Geometry();
+				var floor = -0.04, step = 1, size = 14;
+
+				for ( var i = 0; i <= size / step * 2; i ++ ) {
+
+					geometry.vertices.push( new THREE.Vector3( - size, floor, i * step - size ) );
+					geometry.vertices.push( new THREE.Vector3(   size, floor, i * step - size ) );
+					geometry.vertices.push( new THREE.Vector3( i * step - size, floor, -size ) );
+					geometry.vertices.push( new THREE.Vector3( i * step - size, floor,  size ) );
+
+				}
+
+				var line = new THREE.LineSegments( geometry, material );
+				scene.add( line );
+			}
+
+			function start() {
+
+				for ( var i = 0; i < kfAnimationsLength; ++i ) {
+
+					var animation = kfAnimations[i];
+
+					for ( var h = 0, hl = animation.hierarchy.length; h < hl; h++ ) {
+
+						var keys = animation.data.hierarchy[ h ].keys;
+						var sids = animation.data.hierarchy[ h ].sids;
+						var obj = animation.hierarchy[ h ];
+
+						if ( keys.length && sids ) {
+
+							for ( var s = 0; s < sids.length; s++ ) {
+
+								var sid = sids[ s ];
+								var next = animation.getNextKeyWith( sid, h, 0 );
+
+								if ( next ) next.apply( sid );
+
+							}
+
+							obj.matrixAutoUpdate = false;
+							animation.data.hierarchy[ h ].node.updateMatrix();
+							obj.matrixWorldNeedsUpdate = true;
+
+						}
+
+					}
+
+					animation.loop = true;
+					animation.play();
+
+				}
+
+			}
+
+			function animate( timestamp ) {
+
+				var frameTime = ( timestamp - lastTimestamp ) * 0.001;
+
+				if ( progress >= 0 && progress < durationSec ) {
+
+					for ( var i = 0; i < kfAnimationsLength; ++i ) {
+
+						kfAnimations[ i ].update( frameTime );
+
+					}
+
+				} else if ( progress >= durationSec ) {
+
+					for ( var i = 0; i < kfAnimationsLength; ++i ) {
+
+						kfAnimations[ i ].stop();
+
+					}
+
+					progress = 0;
+					start();
+
+				}
+
+				progress += frameTime;
+				lastTimestamp = timestamp;
+
+				////well known part
+
+				pointLight.position.copy( camera.position );
+
+
+				mirrorCube.visible = false;
+				mirrorCubeCamera.updateCubeMap( renderer, scene );
+				mirrorCube.visible = true;
+
+				model.children[2].children[0].visible = false;
+				mirrorCubeCameraTest.updateCubeMap( renderer, scene );
+				model.children[2].children[0].visible = true;
+
+
+				renderer.render( scene, camera );
+				controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+				requestAnimationFrame( animate );
+
+			}
+
+		</script>
+	</body>
+</html>

@@ -46,6 +46,11 @@
 			uniform float offset;
 			uniform float exponent;
 
+
+
+			var mirrorCube, mirrorCubeCamera; // for mirror material
+
+
 			varying vec3 vWorldPosition;
 
 			void main() {
@@ -167,12 +172,12 @@
 				//addModelDae("dae/canestro.dae", 3, 0 ,-200, 0);
 				//addModelDae("dae/logo.dae", 0.5, 0 ,-50, 0);
 				//addModelDae("dae/monster/monster.dae", 0.05, 0 ,-30, 0);
-				addModelDae("dae/test.dae", 0.1, 0 ,0, 0);
+				//addModelDae("dae/test.dae", 0.1, 0 ,0, 0);
 
 
 				//MODEL JSON
 				
-				//addModelJson("json/cow.js", 0.35, 0,-33,0);
+				addModelJson("json/cow.js", 0.35, 0,-33,0);
 				//addModelJson("json/flamingo.js", 0.35, 0, 15, 0);		
 				//addModelJson("json/birds_A_black.js", 0.35, 0,25,30);
 				//addModelJson("json/animals_A_black.js", 0.35,0, -33,-0);
@@ -183,6 +188,28 @@
 
 				//MODEL OBJ
 				//addModelObj();
+
+
+
+
+
+				var cubeGeom = new THREE.SphereGeometry( 50, 32, 16 );
+				mirrorCubeCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+				// mirrorCubeCamera.renderTarget.minFilter = THREE.LinearMipMapLinearFilter;
+				scene.add( mirrorCubeCamera );
+
+				//var mirrorMaterial = new THREE.MeshBasicMaterial( { color: 0x111111, envMap: mirrorCubeCamera.renderTarget } );
+
+				var mirrorMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorCubeCamera.renderTarget } );
+				mirrorCube = new THREE.Mesh( cubeGeom, mirrorMaterial );
+				mirrorCube.position.set(-75,50,0);
+				mirrorCubeCamera.position = mirrorCube.position;
+				scene.add(mirrorCube);
+
+
+
+
+
 
 				// RENDERER
 
@@ -304,6 +331,10 @@
 
 			function render() {
 
+				mirrorCube.visible = false;
+				mirrorCubeCamera.updateCubeMap( renderer, scene );
+				mirrorCube.visible = true;
+
 				var delta = clock.getDelta();
 
 				//controls.update();
@@ -315,6 +346,8 @@
 				}
 
 				renderer.render( scene, camera );
+
+
 
 			}
 
